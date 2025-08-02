@@ -45,6 +45,15 @@ app.get("/", (req, res) => {
   res.send("Event Management System API is running!")
 })
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: "OK", 
+    timestamp: new Date().toISOString(),
+    message: "API is healthy" 
+  })
+})
+
 // Error handling middleware (optional, but good practice)
 app.use((err, req, res, next) => {
   console.error(err.stack)

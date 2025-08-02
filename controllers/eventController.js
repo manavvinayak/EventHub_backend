@@ -5,6 +5,8 @@ import Event from "../models/Event.js"
 // @access  Public
 const getEvents = async (req, res) => {
   try {
+    console.log("getEvents called with query:", req.query)
+    
     const { club, date, category, keyword } = req.query
     const query = {}
 
@@ -26,10 +28,14 @@ const getEvents = async (req, res) => {
       query.$or = [{ name: { $regex: keyword, $options: "i" } }, { description: { $regex: keyword, $options: "i" } }]
     }
 
+    console.log("MongoDB query:", JSON.stringify(query))
+    
     const events = await Event.find(query).sort({ date: 1, time: 1 })
+    console.log("Found events:", events.length)
+    
     res.status(200).json(events)
   } catch (error) {
-    console.error(error)
+    console.error("getEvents error:", error)
     res.status(500).json({ message: "Server error fetching events" })
   }
 }
