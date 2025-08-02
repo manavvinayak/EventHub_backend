@@ -11,7 +11,7 @@ const setJwtCookie = (res, token) => {
   res.cookie("jwt", token, {
     httpOnly: true, // Makes the cookie inaccessible to client-side JavaScript
     secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-    sameSite: "strict", // Protects against CSRF attacks
+    sameSite: "none", 
     maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
   })
 }
