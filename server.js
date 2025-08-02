@@ -23,8 +23,11 @@ mongoose
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:3000", // Allow frontend origin
-    credentials: true, // Allow cookies to be sent
+     origin: [
+    'https://event-hub-frontend-bay.vercel.app/', 
+    'http://localhost:3000'  
+  ],
+    credentials: true, 
   }),
 )
 app.use(express.json()) // For parsing application/json
