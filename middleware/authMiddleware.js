@@ -4,15 +4,17 @@ import User from "../models/User.js"
 const protect = async (req, res, next) => {
   let token
 
+  console.log("Auth middleware - full request headers:", req.headers)
   console.log("Auth middleware - cookies:", req.cookies)
+  console.log("Auth middleware - cookie header:", req.headers.cookie)
   
-  if (req.cookies.jwt) {
+  if (req.cookies && req.cookies.jwt) {
     token = req.cookies.jwt
-    console.log("Token found in cookies")
+    console.log("Token found in cookies:", token.substring(0, 20) + "...")
   }
 
   if (!token) {
-    console.log("No token found")
+    console.log("No token found - sending 401")
     return res.status(401).json({ message: "Not authorized, no token" })
   }
 

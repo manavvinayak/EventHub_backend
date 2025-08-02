@@ -24,10 +24,12 @@ mongoose
 app.use(
   cors({
      origin: [
-    'https://event-hub-frontend-bay.vercel.app/', 
-    'http://localhost:3000'  
+    'https://event-hub-frontend-bay.vercel.app', 
+    'http://localhost:3000',
+    'http://localhost:5173'  // Add Vite's default port
   ],
-    credentials: true, 
+    credentials: true, // This is crucial for cookies to work
+    optionsSuccessStatus: 200 // For legacy browser support
   }),
 )
 app.use(express.json()) // For parsing application/json

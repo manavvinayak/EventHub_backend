@@ -8,11 +8,20 @@ const generateToken = (id) => {
 }
 
 const setJwtCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === "production"
+  
   res.cookie("jwt", token, {
     httpOnly: true, // Makes the cookie inaccessible to client-side JavaScript
-    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-    sameSite: "none", 
+    secure: isProduction, // Use secure cookies in production only
+    sameSite: isProduction ? "none" : "lax", // Use "lax" for local development
     maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
+  })
+  
+  console.log("Cookie set with options:", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    maxAge: 60 * 60 * 1000
   })
 }
 
@@ -62,11 +71,15 @@ const login = async (req, res) => {
   const { email, password } = req.body
 
   try {
+    console.log("Login attempt for email:", email)
     const user = await User.findOne({ email })
 
     if (user && (await user.matchPassword(password))) {
       const token = generateToken(user._id)
+      console.log("Generated token for user:", user._id)
+      
       setJwtCookie(res, token)
+      console.log("Cookie should be set in response")
 
       res.json({
         _id: user._id,
@@ -75,10 +88,11 @@ const login = async (req, res) => {
         role: user.role,
       })
     } else {
+      console.log("Invalid credentials for email:", email)
       res.status(401).json({ message: "Invalid email or password" })
     }
   } catch (error) {
-    console.error(error)
+    console.error("Login error:", error)
     res.status(500).json({ message: "Server error during login" })
   }
 }
