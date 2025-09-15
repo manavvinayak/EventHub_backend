@@ -4,9 +4,9 @@ import dotenv from "dotenv"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 
-import authRoutes from "./routes/authRoutes.js"
-import eventRoutes from "./routes/eventRoutes.js"
-import registrationRoutes from "./routes/registrationRoutes.js"
+import authRoutes from "../routes/authRoutes.js"
+import eventRoutes from "../routes/eventRoutes.js"
+import registrationRoutes from "../routes/registrationRoutes.js"
 
 dotenv.config()
 
@@ -26,7 +26,7 @@ app.use(
      origin: [
     'https://event-hub-frontend-bay.vercel.app', 
     'http://localhost:3000',
-    'http://localhost:5173'  // Add Vite's default port
+    'http://localhost:5173'  
   ],
     credentials: true, // This is crucial for cookies to work
     optionsSuccessStatus: 200 // For legacy browser support
