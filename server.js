@@ -51,9 +51,15 @@ app.use(
       }
     },
     credentials: true,
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
   }),
 )
+
+// Handle preflight requests explicitly
+app.options('*', cors())
 app.use(express.json()) // For parsing application/json
 app.use(cookieParser()) // For parsing cookies
 
