@@ -22,10 +22,15 @@ mongoose
 
 // Middleware
 const allowedOrigins = [
+  // Production Vercel URLs
+  'https://event-hub-frontend-alpha-three.vercel.app',
+  'https://event-hub-frontend-alpha-three.vercel.app/',
+  'https://event-hub-frontend-7k0jcyc2w-manavvinayaks-projects.vercel.app',
+  'https://event-hub-frontend-7k0jcyc2w-manavvinayaks-projects.vercel.app/',
+  // Old URL (if still in use)
   'https://event-hub-frontend-bay.vercel.app',
   'https://event-hub-frontend-bay.vercel.app/',
-  // Add your actual Vercel URL here after deployment
-  // Format: 'https://your-app-name.vercel.app',
+  // Local development
   'http://localhost:3000',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
