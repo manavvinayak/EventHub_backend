@@ -2,26 +2,41 @@ import nodemailer from 'nodemailer'
 
 // Create transporter
 const createTransporter = () => {
-  // Check if email credentials are configured
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error('❌ Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file')
-    throw new Error('Email credentials not configured')
-  }
+  // Check if using SendGrid (production) or Gmail (development)
+  if (process.env.SENDGRID_API_KEY) {
+    // Production: Use SendGrid
+    console.log('📧 Using SendGrid for email delivery')
+    return nodemailer.createTransport({
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY,
+      },
+    })
+  } else {
+    // Development: Use Gmail
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error('❌ Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file')
+      throw new Error('Email credentials not configured')
+    }
 
-  if (process.env.EMAIL_USER === 'your-email@gmail.com' || process.env.EMAIL_PASS === 'your-app-password') {
-    console.error('❌ Please update EMAIL_USER and EMAIL_PASS with real credentials in .env file')
-    throw new Error('Please configure real email credentials')
-  }
+    if (process.env.EMAIL_USER === 'your-email@gmail.com' || process.env.EMAIL_PASS === 'your-app-password') {
+      console.error('❌ Please update EMAIL_USER and EMAIL_PASS with real credentials in .env file')
+      throw new Error('Please configure real email credentials')
+    }
 
-  console.log('📧 Creating email transporter with user:', process.env.EMAIL_USER)
-  
-  return nodemailer.createTransport({
-    service: 'gmail', // You can change this to your preferred email service
-    auth: {
-      user: process.env.EMAIL_USER, // Your email
-      pass: process.env.EMAIL_PASS, // Your email password or app password
-    },
-  })
+    console.log('📧 Using Gmail for email delivery (development)')
+    
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    })
+  }
 }
 
 // Send event registration confirmation email
@@ -33,8 +48,12 @@ export const sendRegistrationConfirmationEmail = async (userEmail, userName, eve
     
     const transporter = createTransporter()
 
+    const fromEmail = process.env.SENDGRID_API_KEY ? 
+      process.env.SENDGRID_FROM_EMAIL || 'noreply@eventhub.com' : 
+      process.env.EMAIL_USER
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: fromEmail,
       to: userEmail,
       subject: `Registration Confirmed - ${eventDetails.name}`,
       html: `
