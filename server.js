@@ -63,6 +63,15 @@ app.options('*', cors())
 app.use(express.json()) // For parsing application/json
 app.use(cookieParser()) // For parsing cookies
 
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.path} - ${new Date().toISOString()}`)
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📦 Request body:', req.body)
+  }
+  next()
+})
+
 // Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/events", eventRoutes)
