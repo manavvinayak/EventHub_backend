@@ -1,7 +1,9 @@
 import nodemailer from 'nodemailer'
 import sgMail from '@sendgrid/mail'
+import formData from 'form-data'
+import Mailgun from 'mailgun.js'
 
-// Create transporter for SMTP (Gmail - development only)
+
 const createTransporter = () => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.error('❌ Gmail credentials not configured')
@@ -137,8 +139,32 @@ export const sendRegistrationConfirmationEmail = async (userEmail, userName, eve
     console.log('📧 User:', userName)
     console.log('📧 Event:', eventDetails.name)
     
-    // Check if using SendGrid HTTP API (production) or SMTP (development)
-    if (process.env.SENDGRID_API_KEY) {
+    // Priority: Mailgun > SendGrid > Gmail (based on Render compatibility)
+    if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
+      console.log('📧 Using Mailgun HTTP API for email delivery (Render-optimized)')
+      
+      // Initialize Mailgun
+      const mailgun = new Mailgun(formData)
+      const mg = mailgun.client({
+        username: 'api',
+        key: process.env.MAILGUN_API_KEY,
+      })
+      
+      const fromEmail = process.env.MAILGUN_FROM_EMAIL || `EventHub <noreply@${process.env.MAILGUN_DOMAIN}>`
+      
+      const messageData = {
+        from: fromEmail,
+        to: userEmail,
+        subject: `Registration Confirmed - ${eventDetails.name}`,
+        html: getEmailHTML(userName, eventDetails),
+        text: getEmailText(userName, eventDetails)
+      }
+      
+      const result = await mg.messages.create(process.env.MAILGUN_DOMAIN, messageData)
+      console.log('✅ Registration confirmation email sent via Mailgun:', result.id)
+      return { success: true, messageId: result.id }
+      
+    } else if (process.env.SENDGRID_API_KEY) {
       console.log('📧 Using SendGrid HTTP API for email delivery')
       
       // Set SendGrid API key
