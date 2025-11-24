@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer'
 import sgMail from '@sendgrid/mail'
 import formData from 'form-data'
 import Mailgun from 'mailgun.js'
+import emailjs from '@emailjs/nodejs'
 
 
 const createTransporter = () => {
@@ -139,7 +140,45 @@ export const sendRegistrationConfirmationEmail = async (userEmail, userName, eve
     console.log('📧 User:', userName)
     console.log('📧 Event:', eventDetails.name)
     
-    // Priority: Mailgun > SendGrid > Gmail (based on Render compatibility)
+    // Priority: EmailJS > Mailgun > SendGrid > Gmail (EmailJS works with any email)
+    if (process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID && process.env.EMAILJS_PRIVATE_KEY) {
+      console.log('📧 Using EmailJS for email delivery (works with any email address)')
+      
+      try {
+        const templateParams = {
+          to_email: userEmail,
+          to_name: userName,
+          event_name: eventDetails.name,
+          event_date: new Date(eventDetails.date).toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          }),
+          event_time: eventDetails.time,
+          event_location: eventDetails.location,
+          event_organizer: eventDetails.organizer,
+          dashboard_url: process.env.FRONTEND_URL + '/dashboard'
+        }
+
+        const result = await emailjs.send(
+          process.env.EMAILJS_SERVICE_ID,
+          process.env.EMAILJS_TEMPLATE_ID,
+          templateParams,
+          {
+            publicKey: process.env.EMAILJS_PUBLIC_KEY,
+            privateKey: process.env.EMAILJS_PRIVATE_KEY,
+          }
+        )
+        
+        console.log('✅ Registration confirmation email sent via EmailJS:', result.status)
+        return { success: true, messageId: result.text }
+      } catch (emailjsError) {
+        console.error('❌ EmailJS failed, trying fallback...', emailjsError.message)
+        // Continue to next option if EmailJS fails
+      }
+    }
+    
     if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
       console.log('📧 Using Mailgun HTTP API for email delivery (Render-optimized)')
       

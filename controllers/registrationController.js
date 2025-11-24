@@ -1,7 +1,6 @@
 import Registration from "../models/Registration.js"
 import Event from "../models/Event.js"
 import User from "../models/User.js"
-import { sendRegistrationConfirmationEmail } from "../utils/emailService.js"
 
 // @desc    Register user for an event
 // @route   POST /api/registrations/register
@@ -39,37 +38,11 @@ const registerForEvent = async (req, res) => {
     event.attendees.push(userId)
     await event.save()
 
-    // Send confirmation email
-    let emailSent = false
-    try {
-      console.log('🔄 Attempting to send confirmation email...')
-      const emailResult = await sendRegistrationConfirmationEmail(
-        user.email,
-        user.username,
-        {
-          name: event.name,
-          date: event.date,
-          time: event.time,
-          location: event.location,
-          organizer: event.organizer
-        }
-      )
-      
-      if (emailResult.success) {
-        console.log(`✅ Confirmation email sent successfully to ${user.email}`)
-        emailSent = true
-      } else {
-        console.error(`❌ Failed to send confirmation email to ${user.email}:`, emailResult.error)
-      }
-    } catch (emailError) {
-      console.error('❌ Error in email sending process:', emailError.message)
-      // Don't fail the registration if email fails
-    }
+    console.log(`✅ Registration completed successfully for user ${user.username}`)
 
     res.status(201).json({ 
       message: "Successfully registered for event", 
-      registration,
-      emailSent: emailSent
+      registration
     })
   } catch (error) {
     console.error(error)

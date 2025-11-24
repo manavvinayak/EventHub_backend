@@ -10,23 +10,45 @@ import registrationRoutes from "./routes/registrationRoutes.js"
 
 dotenv.config()
 
+// Validate required environment variables
+const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET']
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars)
+  process.exit(1)
+}
+
 const app = express()
 const PORT = process.env.PORT || 5000
 const MONGO_URI = process.env.MONGO_URI
 
+console.log('🚀 Starting EventHub API Server...')
+console.log('📊 Environment:', process.env.NODE_ENV || 'development')
+console.log('🔧 Port:', PORT)
+
 // Connect to MongoDB
 mongoose
   .connect(MONGO_URI)
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch((err) => console.error("MongoDB connection error:", err))
+  .then(() => {
+    console.log("✅ MongoDB connected successfully")
+    console.log("🔗 Database connection established")
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err)
+    process.exit(1)
+  })
 
 // Middleware
 const allowedOrigins = [
-  // Production Vercel URLs
+  // Production Vercel URLs - current
   'https://event-hub-frontend-alpha-three.vercel.app',
   'https://event-hub-frontend-alpha-three.vercel.app/',
   'https://event-hub-frontend-7k0jcyc2w-manavvinayaks-projects.vercel.app',
   'https://event-hub-frontend-7k0jcyc2w-manavvinayaks-projects.vercel.app/',
+  // Any Vercel deployment pattern
+  /^https:\/\/event-hub-frontend.*\.vercel\.app$/,
+  /^https:\/\/.*-manavvinayaks-projects\.vercel\.app$/,
   // Old URL (if still in use)
   'https://event-hub-frontend-bay.vercel.app',
   'https://event-hub-frontend-bay.vercel.app/',
@@ -43,17 +65,31 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true)
       
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      // Check exact matches first
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true)
+      }
+      
+      // Check regex patterns
+      const isAllowedByPattern = allowedOrigins.some(allowedOrigin => {
+        if (allowedOrigin instanceof RegExp) {
+          return allowedOrigin.test(origin)
+        }
+        return false
+      })
+      
+      if (isAllowedByPattern || process.env.NODE_ENV !== 'production') {
         callback(null, true)
       } else {
-        console.log('Blocked by CORS:', origin)
-        callback(new Error('Not allowed by CORS'))
+        console.log('🚫 Blocked by CORS:', origin)
+        console.log('🔍 Allowed origins:', allowedOrigins.filter(o => typeof o === 'string'))
+        callback(new Error(`CORS: Origin ${origin} not allowed`))
       }
     },
     credentials: true,
     optionsSuccessStatus: 200,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
     exposedHeaders: ['Set-Cookie']
   }),
 )
@@ -65,9 +101,13 @@ app.use(cookieParser()) // For parsing cookies
 
 // Add request logging middleware
 app.use((req, res, next) => {
-  console.log(`📨 ${req.method} ${req.path} - ${new Date().toISOString()}`)
+  const timestamp = new Date().toISOString()
+  console.log(`📨 ${req.method} ${req.path} - ${timestamp}`)
+  console.log(`🌍 Origin: ${req.get('Origin') || 'No origin'}`)
+  console.log(`🍪 Cookies: ${req.get('Cookie') ? 'Present' : 'None'}`)
+  
   if (req.body && Object.keys(req.body).length > 0) {
-    console.log('📦 Request body:', req.body)
+    console.log('📦 Request body keys:', Object.keys(req.body))
   }
   next()
 })
@@ -87,16 +127,46 @@ app.get("/api/health", (req, res) => {
   res.json({ 
     status: "OK", 
     timestamp: new Date().toISOString(),
-    message: "API is healthy" 
+    message: "API is healthy",
+    environment: process.env.NODE_ENV || "development",
+    features: {
+      signup: "enabled",
+      login: "enabled", 
+      emailVerification: "disabled",
+      registration: "enabled"
+    }
   })
 })
 
-// Error handling middleware (optional, but good practice)
+// Test endpoint for signup functionality
+app.post("/api/test/signup", async (req, res) => {
+  res.json({
+    message: "Signup endpoint is accessible",
+    timestamp: new Date().toISOString(),
+    receivedData: {
+      hasUsername: !!req.body.username,
+      hasEmail: !!req.body.email,
+      hasPassword: !!req.body.password
+    }
+  })
+})
+
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack)
-  res.status(500).send("Something broke!")
+  console.error('❌ Server Error:', err.message)
+  console.error('📍 Stack:', err.stack)
+  console.error('🔗 Request URL:', req.url)
+  console.error('📝 Request Method:', req.method)
+  
+  res.status(err.status || 500).json({
+    message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  })
 })
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+  console.log("🎉 EventHub API Server is running!")
+  console.log(`🌐 Server running on port ${PORT}`)
+  console.log(`🔗 API Health Check: http://localhost:${PORT}/api/health`)
+  console.log("📡 Ready to accept connections...")
 })
